@@ -9,11 +9,14 @@ import os
 console = Console()
 
 def main():
+    # Ensure ~/.omni directory exists
+    omni_dir = config.get_omni_dir()
+
     # Load configuration
     config.load_omnirc()
     
     # Global Session History
-    history_path = os.path.expanduser('~/.omni_history')
+    history_path = str(omni_dir / 'history')
     session = PromptSession(history=FileHistory(history_path))
     console.print("[bold cyan]Welcome to Omni Shell![/bold cyan] Type 'exit' to quit.")
 
@@ -36,7 +39,7 @@ def main():
             
             # Token-Free Built-in: history
             if input_lower == 'history':
-                history_file = os.path.expanduser('~/.omni_history')
+                history_file = str(config.get_omni_dir() / 'history')
                 if os.path.exists(history_file):
                     with open(history_file, 'r', encoding='utf-8') as f:
                         lines = f.readlines()

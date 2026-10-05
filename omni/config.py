@@ -1,16 +1,32 @@
 import os
 from pathlib import Path
 
+def get_omni_dir() -> Path:
+    """Returns the path to the ~/.omni directory, creating it if necessary."""
+    omni_dir = Path.home() / '.omni'
+    if not omni_dir.exists():
+        omni_dir.mkdir(parents=True, exist_ok=True)
+    return omni_dir
+
 def load_omnirc():
-    """Locates and executes commands from .omnirc on startup."""
-    # Try local directory first, then home directory
-    rc_path = Path('.omnirc')
-    if not rc_path.exists():
-        rc_path = Path.home() / '.omnirc'
+    """Locates and executes commands from ~/.omni/omnirc or local .omnirc on startup."""
+    omni_dir = get_omni_dir()
+    global_rc = omni_dir / 'omnirc'
+    local_rc = Path('.omnirc')
     
-    if rc_path.exists():
-        print(f"[System] Loading config from {rc_path}")
-        with open(rc_path, 'r') as f:
+    # Prefer local config for project-specific overrides, fallback to global
+    if local_rc.exists():
+        target_rc = local_rc
+    elif global_rc.exists():
+        target_rc = global_rc
+    else:
+        # Create a default empty one so the user has it ready
+        global_rc.touch()
+        target_rc = global_rc
+    
+    if target_rc.exists():
+        print(f"[System] Loading config from {target_rc}")
+        with open(target_rc, 'r') as f:
             for line in f:
                 line = line.strip()
                 # Ignore empty lines and comments
@@ -18,5 +34,3 @@ def load_omnirc():
                     # For now we just print it. 
                     # Once we build the executor, this will actually run the commands!
                     print(f"[OmniRC] Executing: {line}")
-    else:
-        print("[System] No .omnirc found.")
