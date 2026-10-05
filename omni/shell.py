@@ -1,10 +1,12 @@
+import os
+import time
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.formatted_text import HTML
 from omni import config
 from omni.executor import execute_native, execute_ai_command
 from omni.llm import translate_to_shell
 from rich.console import Console
-import os
 
 console = Console()
 
@@ -18,7 +20,11 @@ def main():
     # Global Session History
     history_path = str(omni_dir / 'history')
     session = PromptSession(history=FileHistory(history_path))
-    console.print("[bold cyan]Welcome to Omni Shell![/bold cyan] Type 'exit' to quit.")
+    
+    console.print("\n[bold magenta]✨ Welcome to Omni Shell ✨[/bold magenta]")
+    console.print("[dim]Type 'exit' to quit or use '?' for AI translations.[/dim]\n")
+
+    last_execution_time = 0.0
 
     while True:
         try:
@@ -26,16 +32,30 @@ def main():
             cwd = os.getcwd()
             folder_name = os.path.basename(cwd) or cwd
             
+            # Format elapsed time for ZSH-style output
+            elapsed_str = f" ⏱️ {last_execution_time:.2f}s " if last_execution_time > 0 else ""
+            
+            # Multiline ZSH-style beautiful prompt with Nerd Font icons
+            prompt_html = HTML(
+                f'<ansiblue>╭─</ansiblue> <ansicyan>🌌 Omni</ansicyan> <ansiblue>📂 {folder_name}</ansiblue><ansiyellow>{elapsed_str}</ansiyellow>\n'
+                f'<ansiblue>╰─</ansiblue><ansigreen>⚡ </ansigreen>'
+            )
+            
             # Interactive prompt
-            user_input = session.prompt(f'omni {folder_name}❯ ')
+            user_input = session.prompt(prompt_html)
             
             if user_input.strip().lower() in ['exit', 'quit']:
+                console.print("[bold magenta]👋 Goodbye![/bold magenta]")
                 break
                 
             if not user_input.strip():
+                last_execution_time = 0.0
                 continue
                 
             input_lower = user_input.strip().lower()
+            
+            # Start timer
+            start_time = time.time()
             
             # Token-Free Built-in: history
             if input_lower == 'history':
@@ -47,6 +67,7 @@ def main():
                             console.print(f"[dim]{i+1}:[/dim] {line.strip()}")
                 else:
                     console.print("[yellow]No history found yet.[/yellow]")
+                last_execution_time = time.time() - start_time
                 continue
                 
             # Token-Free Built-in: read
@@ -54,6 +75,7 @@ def main():
                 from omni.builtins import read_file
                 filepath = user_input.strip()[5:].strip()
                 read_file(filepath)
+                last_execution_time = time.time() - start_time
                 continue
                 
             # Token-Free Built-in: search
@@ -61,6 +83,7 @@ def main():
                 from omni.builtins import search_web
                 query = user_input.strip()[7:].strip()
                 search_web(query)
+                last_execution_time = time.time() - start_time
                 continue
                 
             # Route to AI if it starts with '?'
@@ -74,9 +97,13 @@ def main():
             else:
                 # Execute natively
                 execute_native(user_input)
+                
+            # Stop timer
+            last_execution_time = time.time() - start_time
             
         except KeyboardInterrupt:
             console.print("[yellow]^C[/yellow]")
+            last_execution_time = 0.0
             continue
         except EOFError:
             break
