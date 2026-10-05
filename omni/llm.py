@@ -1,7 +1,11 @@
 import os
+import warnings
 from google import genai
 from rich.console import Console
 from dotenv import load_dotenv
+
+# Suppress google-genai SDK warnings so they don't clutter the terminal
+warnings.filterwarnings("ignore", message="Direct use of automatic function calling")
 
 load_dotenv()
 console = Console()
