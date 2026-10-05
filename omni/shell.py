@@ -31,6 +31,22 @@ def main():
             if not user_input.strip():
                 continue
                 
+            input_lower = user_input.strip().lower()
+            
+            # Token-Free Built-in: read
+            if input_lower.startswith('read '):
+                from omni.builtins import read_file
+                filepath = user_input.strip()[5:].strip()
+                read_file(filepath)
+                continue
+                
+            # Token-Free Built-in: search
+            if input_lower.startswith('search '):
+                from omni.builtins import search_web
+                query = user_input.strip()[7:].strip()
+                search_web(query)
+                continue
+                
             # Route to AI if it starts with '?'
             if user_input.startswith('?'):
                 ai_prompt = user_input[1:].strip()
