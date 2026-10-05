@@ -1,7 +1,8 @@
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from omni import config
-from omni.executor import execute_native
+from omni.executor import execute_native, execute_ai_command
+from omni.llm import translate_to_shell
 from rich.console import Console
 import os
 
@@ -30,8 +31,17 @@ def main():
             if not user_input.strip():
                 continue
                 
-            # Execute natively
-            execute_native(user_input)
+            # Route to AI if it starts with '?'
+            if user_input.startswith('?'):
+                ai_prompt = user_input[1:].strip()
+                if ai_prompt:
+                    shell_command = translate_to_shell(ai_prompt)
+                    execute_ai_command(shell_command)
+                else:
+                    console.print("[yellow]Please ask a question after the '?'[/yellow]")
+            else:
+                # Execute natively
+                execute_native(user_input)
             
         except KeyboardInterrupt:
             console.print("[yellow]^C[/yellow]")

@@ -3,3 +3,4 @@ pygments
 rich
 google-genai
 duckduckgo-search
+python-dotenv
