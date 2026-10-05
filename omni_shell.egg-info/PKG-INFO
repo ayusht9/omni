@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: omni-shell
+Version: 0.1.0
+Requires-Dist: prompt_toolkit
+Requires-Dist: pygments
+Requires-Dist: rich
+Requires-Dist: google-genai
+Requires-Dist: duckduckgo-search
+Requires-Dist: python-dotenv
+Dynamic: requires-dist

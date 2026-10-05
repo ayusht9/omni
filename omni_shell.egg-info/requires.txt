@@ -1,0 +1,6 @@
+prompt_toolkit
+pygments
+rich
+google-genai
+duckduckgo-search
+python-dotenv

@@ -12,8 +12,9 @@ def main():
     # Load configuration
     config.load_omnirc()
     
-    # Session with file history
-    session = PromptSession(history=FileHistory('.omni_history'))
+    # Global Session History
+    history_path = os.path.expanduser('~/.omni_history')
+    session = PromptSession(history=FileHistory(history_path))
     console.print("[bold cyan]Welcome to Omni Shell![/bold cyan] Type 'exit' to quit.")
 
     while True:
@@ -33,6 +34,18 @@ def main():
                 
             input_lower = user_input.strip().lower()
             
+            # Token-Free Built-in: history
+            if input_lower == 'history':
+                history_file = os.path.expanduser('~/.omni_history')
+                if os.path.exists(history_file):
+                    with open(history_file, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()
+                        for i, line in enumerate(lines[-20:]): # Show last 20
+                            console.print(f"[dim]{i+1}:[/dim] {line.strip()}")
+                else:
+                    console.print("[yellow]No history found yet.[/yellow]")
+                continue
+                
             # Token-Free Built-in: read
             if input_lower.startswith('read '):
                 from omni.builtins import read_file
