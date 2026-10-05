@@ -1,7 +1,11 @@
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
+from omni import config
 
 def main():
+    # Load configuration
+    config.load_omnirc()
+    
     # Session with file history
     session = PromptSession(history=FileHistory('.omni_history'))
     print("Welcome to Omni Shell! Type 'exit' to quit.")

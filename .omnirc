@@ -1,0 +1,5 @@
+# Omni Configuration File
+# Commands here will run at the start of every Omni session.
+
+echo "Booting Omni..."
+set-theme dark
