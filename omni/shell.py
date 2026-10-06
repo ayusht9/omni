@@ -1,6 +1,7 @@
 import os
 import time
 import subprocess
+import re
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.formatted_text import HTML
@@ -112,7 +113,7 @@ def main():
             start_time = time.time()
             
             # Token-Free Built-in: history
-            if input_lower == 'history':
+            if re.match(r'^history[:]?\s*$', user_input, re.IGNORECASE):
                 history_file = str(config.get_omni_dir() / 'history')
                 if os.path.exists(history_file):
                     with open(history_file, 'r', encoding='utf-8') as f:
@@ -125,24 +126,29 @@ def main():
                 continue
                 
             # Token-Free Built-in: read
-            if input_lower.startswith('read '):
+            read_match = re.match(r'^read[:]?\s+(.*)', user_input, re.IGNORECASE)
+            if read_match:
                 from omni.builtins import read_file
-                filepath = user_input.strip()[5:].strip()
+                filepath = read_match.group(1).strip()
                 read_file(filepath)
                 last_execution_time = time.time() - start_time
                 continue
                 
             # Token-Free Built-in: search
-            if input_lower.startswith('search '):
+            search_match = re.match(r'^search[:]?\s+(.*)', user_input, re.IGNORECASE)
+            if search_match:
                 from omni.builtins import search_web
-                query = user_input.strip()[7:].strip()
+                query = search_match.group(1).strip()
                 search_web(query)
                 last_execution_time = time.time() - start_time
                 continue
                 
             # Route to AI if it starts with '?'
-            if user_input.startswith('?'):
-                ai_prompt = user_input[1:].strip()
+            if user_input.strip().startswith('?'):
+                # Strip the prefix robustly
+                ai_prompt = user_input.strip()[1:].strip()
+                if ai_prompt.startswith(':'):
+                    ai_prompt = ai_prompt[1:].strip()
                 if ai_prompt:
                     shell_command = translate_to_shell(ai_prompt)
                     execute_ai_command(shell_command)
