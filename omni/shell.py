@@ -4,7 +4,7 @@ import subprocess
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.completion import Completer, Completion, PathCompleter
+from prompt_toolkit.completion import Completer, Completion, PathCompleter, ExecutableCompleter
 from omni import config
 from omni.executor import execute_native, execute_ai_command
 from omni.llm import translate_to_shell
@@ -40,16 +40,19 @@ def get_python_env():
 class OmniCompleter(Completer):
     def __init__(self):
         self.path_completer = PathCompleter(expanduser=True)
+        self.exec_completer = ExecutableCompleter()
         self.commands = ['search', 'read', 'history', 'exit', 'quit', 'cd']
 
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
         
-        # If we are typing the very first word, suggest built-in commands
+        # If we are typing the very first word, suggest built-in commands AND native executables
         if ' ' not in text:
             for cmd in self.commands:
                 if cmd.startswith(text.lower()):
                     yield Completion(cmd, start_position=-len(text))
+            # Autocomplete all globally installed programs (git, python, npm, etc.)
+            yield from self.exec_completer.get_completions(document, complete_event)
                     
         # Always suggest file/directory paths
         yield from self.path_completer.get_completions(document, complete_event)
