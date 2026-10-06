@@ -72,10 +72,14 @@ def record_usage(tokens: int = 0, increment_request: bool = True):
         json.dump(data, f)
 
 def get_battery_status():
-    """Returns a formatted battery string based on the actual 1,500 requests/day limit."""
+    """Returns a formatted battery string tracking both requests and tokens, configurable via .omnirc."""
+    if os.environ.get("SHOW_BATTERY", "True").lower() != "true":
+        return ""
+        
     usage_file = _get_usage_file()
     today = datetime.now().strftime("%Y-%m-%d")
     requests = 0
+    tokens = 0
     
     if usage_file.exists():
         try:
@@ -83,6 +87,7 @@ def get_battery_status():
                 data = json.load(f)
             if data.get("date") == today:
                 requests = data.get("requests", 0)
+                tokens = data.get("tokens", 0)
         except Exception:
             pass
             
@@ -100,7 +105,8 @@ def get_battery_status():
         icon = "💀"
         color = "ansired"
         
-    return f" <{color}>{icon} {percent}% ({requests}/{limit})</{color}>"
+    token_str = f"{tokens/1000:.1f}k" if tokens >= 1000 else str(tokens)
+    return f"<{color}>{icon} {percent}% ({requests}/{limit} reqs) ({token_str} tkns)</{color}>"
 
 def translate_to_shell(prompt: str) -> str:
     """Translates a natural language prompt into a PowerShell command using Gemini."""

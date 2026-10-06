@@ -21,16 +21,20 @@ def load_omnirc():
         target_rc = global_rc
     else:
         # Create a default empty one so the user has it ready
-        global_rc.touch()
+        with open(global_rc, 'w', encoding='utf-8') as f:
+            f.write("# Omni Shell Configuration\n")
+            f.write("SHOW_BATTERY=True\n")
         target_rc = global_rc
     
     if target_rc.exists():
-        print(f"[System] Loading config from {target_rc}")
         with open(target_rc, 'r') as f:
             for line in f:
                 line = line.strip()
                 # Ignore empty lines and comments
                 if line and not line.startswith('#'):
-                    # For now we just print it. 
-                    # Once we build the executor, this will actually run the commands!
-                    print(f"[OmniRC] Executing: {line}")
+                    # Support exporting env vars directly from .omnirc
+                    if '=' in line and not line.startswith('alias '):
+                        key, val = line.split('=', 1)
+                        os.environ[key.strip()] = val.strip()
+                    else:
+                        print(f"[OmniRC] Executing: {line}")

@@ -99,21 +99,30 @@ def main():
             cwd = os.getcwd()
             folder_name = os.path.basename(cwd) or cwd
             
-            # Format elapsed time for ZSH-style output
-            elapsed_str = f" ⏱️ {last_execution_time:.2f}s " if last_execution_time > 0 else ""
-            
             git_str = get_git_branch()
             venv_str = get_python_env()
             battery_str = get_battery_status()
             
-            # Multiline ZSH-style beautiful prompt with Nerd Font icons and AI Battery
+            # Format elapsed time for ZSH-style right prompt
+            elapsed_str = f"⏱️ {last_execution_time:.2f}s" if last_execution_time > 0 else ""
+            
+            # Multiline ZSH-style beautiful left prompt
             prompt_html = HTML(
-                f'<ansiblue>╭─</ansiblue> <ansicyan>🌌 Omni</ansicyan> <ansiblue>📂 {folder_name}</ansiblue>{git_str}{venv_str}{battery_str}<ansiyellow>{elapsed_str}</ansiyellow>\n'
+                f'<ansiblue>╭─</ansiblue> <ansicyan>🌌 Omni</ansicyan> <ansiblue>📂 {folder_name}</ansiblue>{git_str}{venv_str}\n'
                 f'<ansiblue>╰─</ansiblue><ansigreen>⚡ </ansigreen>'
             )
             
+            # Right edge prompt (metrics)
+            rprompt_parts = []
+            if battery_str:
+                rprompt_parts.append(battery_str)
+            if elapsed_str:
+                rprompt_parts.append(f"<ansiyellow>{elapsed_str}</ansiyellow>")
+                
+            rprompt_html = HTML("  ".join(rprompt_parts)) if rprompt_parts else None
+            
             # Interactive prompt
-            user_input = session.prompt(prompt_html)
+            user_input = session.prompt(prompt_html, rprompt=rprompt_html)
             
             if user_input.strip().lower() in ['exit', 'quit']:
                 console.print("[bold magenta]👋 Goodbye![/bold magenta]")
