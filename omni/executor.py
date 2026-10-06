@@ -60,10 +60,10 @@ def execute_native(command: str):
     except Exception as e:
         console.print(f"[bold red]Execution error:[/bold red] {e}")
 
-def execute_ai_command(command_str: str):
+def execute_ai_command(command_str: str) -> bool:
     """Safely previews an AI-generated command and asks for confirmation before executing."""
     if not command_str:
-        return
+        return False
         
     # Beautifully syntax-highlight the generated code
     syntax = Syntax(command_str, "powershell", theme="monokai", line_numbers=False, word_wrap=True)
@@ -78,5 +78,7 @@ def execute_ai_command(command_str: str):
     if is_confirmed:
         console.print("[bold green]Executing...[/bold green]")
         execute_native(command_str)
+        return True
     else:
         console.print("[bold red]Aborted.[/bold red]")
+        return False

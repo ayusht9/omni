@@ -38,6 +38,13 @@ def get_python_env():
         return f" <ansiyellow>🐍 {name}</ansiyellow>"
     return ""
 
+class OmniHistory(FileHistory):
+    def append_string(self, string: str):
+        # Prevent natural language prompts (starting with '?') from cluttering history
+        if string.strip().startswith('?'):
+            return
+        super().append_string(string)
+
 class OmniCompleter(Completer):
     def __init__(self):
         self.path_completer = PathCompleter(expanduser=True)
@@ -68,7 +75,7 @@ def main():
     # Global Session History & Autocomplete
     history_path = str(omni_dir / 'history')
     session = PromptSession(
-        history=FileHistory(history_path),
+        history=OmniHistory(history_path),
         completer=OmniCompleter(),
         complete_while_typing=False
     )
@@ -151,7 +158,11 @@ def main():
                     ai_prompt = ai_prompt[1:].strip()
                 if ai_prompt:
                     shell_command = translate_to_shell(ai_prompt)
-                    execute_ai_command(shell_command)
+                    if shell_command:
+                        was_executed = execute_ai_command(shell_command)
+                        if was_executed:
+                            # Save the translated command to history instead of the English prompt
+                            session.history.append_string(shell_command)
                 else:
                     console.print("[yellow]Please ask a question after the '?'[/yellow]")
             else:
