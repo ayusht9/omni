@@ -57,6 +57,10 @@ def translate_to_shell(prompt: str) -> str:
         # Send message to the persistent chat session
         response = chat.send_message(prompt)
         
+        if not response.text:
+            console.print("[bold red]Translation Error:[/bold red] Gemini returned an empty response. (The prompt might have been blocked by safety filters or it couldn't generate a command).")
+            return ""
+        
         # Strip any accidental markdown formatting
         command = response.text.strip()
         if command.startswith("```powershell"):
