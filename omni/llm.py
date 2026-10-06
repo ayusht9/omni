@@ -12,15 +12,17 @@ console = Console()
 
 # Global chat session to persist context across commands
 _chat_session = None
+_client = None
 
 def get_chat_session():
-    global _chat_session
+    global _chat_session, _client
     if _chat_session is None:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             return None
             
-        client = genai.Client(api_key=api_key)
+        # Store client globally so it doesn't get garbage collected and closed
+        _client = genai.Client(api_key=api_key)
         
         system_instruction = (
             "You are a command-line translation assistant for Windows PowerShell. "
@@ -33,7 +35,7 @@ def get_chat_session():
         )
         
         # Initialize a persistent chat session instead of a stateless generate_content call
-        _chat_session = client.chats.create(
+        _chat_session = _client.chats.create(
             model='gemini-3.5-flash-lite',
             config=genai.types.GenerateContentConfig(
                 system_instruction=system_instruction,
