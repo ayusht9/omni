@@ -1,5 +1,6 @@
 import os
 import subprocess
+import re
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.syntax import Syntax
@@ -21,6 +22,14 @@ def execute_native(command: str):
             os.chdir(target_dir)
         except Exception as e:
             console.print(f"[bold red]cd error:[/bold red] {e}")
+        return
+
+    # Handle Windows drive changes (e.g., "D:" or "E:\")
+    if re.match(r'^[a-z]:[\\/]?$', cmd):
+        try:
+            os.chdir(cmd.upper())
+        except Exception as e:
+            console.print(f"[bold red]Drive change error:[/bold red] {e}")
         return
 
     # Handle other native commands via powershell
