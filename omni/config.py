@@ -23,7 +23,9 @@ def load_omnirc():
         # Create a default empty one so the user has it ready
         with open(global_rc, 'w', encoding='utf-8') as f:
             f.write("# Omni Shell Configuration\n")
+            f.write("GEMINI_API_KEY=\n")
             f.write("SHOW_BATTERY=True\n")
+            f.write("LLM_MODEL=gemini-2.5-flash\n")
         target_rc = global_rc
     
     if target_rc.exists():

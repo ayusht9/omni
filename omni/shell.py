@@ -8,7 +8,7 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.completion import Completer, Completion, PathCompleter, ExecutableCompleter
 from omni import config
 from omni.executor import execute_native, execute_ai_command
-from omni.llm import translate_to_shell, get_battery_status
+from omni.llm import translate_to_shell, get_battery_status, get_model_name
 from rich.console import Console
 
 console = Console()
@@ -112,8 +112,12 @@ def main():
                 f'<ansiblue>╰─</ansiblue><ansigreen>⚡ </ansigreen>'
             )
             
+            model_name = get_model_name()
+            
             # Right edge prompt (metrics)
             rprompt_parts = []
+            if model_name:
+                rprompt_parts.append(f"<ansicyan>🧠 {model_name}</ansicyan>")
             if battery_str:
                 rprompt_parts.append(battery_str)
             if elapsed_str:

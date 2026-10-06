@@ -37,8 +37,9 @@ def get_chat_session():
         )
         
         # Initialize a persistent chat session instead of a stateless generate_content call
+        model_name = get_model_name()
         _chat_session = _client.chats.create(
-            model='gemini-3.5-flash-lite',
+            model=model_name,
             config=genai.types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.1
@@ -107,6 +108,10 @@ def get_battery_status():
         
     token_str = f"{tokens/1000:.1f}k" if tokens >= 1000 else str(tokens)
     return f"<{color}>{icon} {percent}% ({requests}/{limit} reqs) ({token_str} tkns)</{color}>"
+
+def get_model_name() -> str:
+    """Returns the currently active AI model name."""
+    return os.environ.get("LLM_MODEL", "gemini-2.5-flash")
 
 def translate_to_shell(prompt: str) -> str:
     """Translates a natural language prompt into a PowerShell command using Gemini."""
