@@ -2,5 +2,5 @@ prompt_toolkit
 pygments
 rich
 google-genai
-duckduckgo-search
+ddgs
 python-dotenv

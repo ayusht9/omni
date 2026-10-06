@@ -9,7 +9,7 @@ setup(
         "pygments",
         "rich",
         "google-genai",
-        "duckduckgo-search",
+        "ddgs",
         "python-dotenv"
     ],
     entry_points={
