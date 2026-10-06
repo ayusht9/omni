@@ -3,6 +3,7 @@ import time
 import subprocess
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.formatted_text import HTML
 from omni import config
 from omni.executor import execute_native, execute_ai_command
@@ -43,9 +44,13 @@ def main():
     # Load configuration
     config.load_omnirc()
     
-    # Global Session History
+    # Global Session History & Autocompletion
     history_path = str(omni_dir / 'history')
-    session = PromptSession(history=FileHistory(history_path))
+    session = PromptSession(
+        history=FileHistory(history_path),
+        completer=PathCompleter(expanduser=True),
+        complete_while_typing=False  # Require pressing TAB to show completions, like ZSH
+    )
     
     console.print("\n[bold magenta]✨ Welcome to Omni Shell ✨[/bold magenta]")
     console.print("[dim]Type 'exit' to quit or use '?' for AI translations.[/dim]\n")
