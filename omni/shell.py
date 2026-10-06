@@ -40,14 +40,14 @@ def get_python_env():
 
 class OmniHistory(FileHistory):
     def append_string(self, string: str):
-        # Prevent natural language prompts (starting with '?') from cluttering up-arrow history
-        if string.strip().startswith('?'):
+        text = string.strip()
+        # Prevent natural language prompts and web searches from cluttering up-arrow history
+        if text.startswith('?') or re.match(r'^(search|read)[:]?\s+', text, re.IGNORECASE):
             # Save it to a separate natural language history file instead
             nl_history_file = config.get_omni_dir() / 'nl_history'
             try:
                 with open(nl_history_file, 'a', encoding='utf-8') as f:
-                    # Strip the '?' prefix before saving if we want pure English, but keeping it is fine.
-                    f.write(string.strip() + '\n')
+                    f.write(text + '\n')
             except Exception:
                 pass
             return
