@@ -3,8 +3,8 @@ import time
 import subprocess
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
-from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.completion import Completer, Completion, PathCompleter
 from omni import config
 from omni.executor import execute_native, execute_ai_command
 from omni.llm import translate_to_shell
@@ -37,6 +37,23 @@ def get_python_env():
         return f" <ansiyellow>🐍 {name}</ansiyellow>"
     return ""
 
+class OmniCompleter(Completer):
+    def __init__(self):
+        self.path_completer = PathCompleter(expanduser=True)
+        self.commands = ['search', 'read', 'history', 'exit', 'quit', 'cd']
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        
+        # If we are typing the very first word, suggest built-in commands
+        if ' ' not in text:
+            for cmd in self.commands:
+                if cmd.startswith(text.lower()):
+                    yield Completion(cmd, start_position=-len(text))
+                    
+        # Always suggest file/directory paths
+        yield from self.path_completer.get_completions(document, complete_event)
+
 def main():
     # Ensure ~/.omni directory exists
     omni_dir = config.get_omni_dir()
@@ -44,12 +61,12 @@ def main():
     # Load configuration
     config.load_omnirc()
     
-    # Global Session History & Autocompletion
+    # Global Session History & Autocomplete
     history_path = str(omni_dir / 'history')
     session = PromptSession(
         history=FileHistory(history_path),
-        completer=PathCompleter(expanduser=True),
-        complete_while_typing=False  # Require pressing TAB to show completions, like ZSH
+        completer=OmniCompleter(),
+        complete_while_typing=False
     )
     
     console.print("\n[bold magenta]✨ Welcome to Omni Shell ✨[/bold magenta]")
