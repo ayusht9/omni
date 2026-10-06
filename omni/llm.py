@@ -10,36 +10,62 @@ warnings.filterwarnings("ignore", message="Direct use of automatic function call
 load_dotenv()
 console = Console()
 
+# Global chat session to persist context across commands
+_chat_session = None
+
+def get_chat_session():
+    global _chat_session
+    if _chat_session is None:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return None
+            
+        client = genai.Client(api_key=api_key)
+        
+        system_instruction = (
+            "You are a command-line translation assistant for Windows PowerShell. "
+            "The user will describe what they want to do in natural language, and your job is to translate it into a valid PowerShell command.\n\n"
+            "RULES:\n"
+            "1. ONLY output the raw PowerShell command.\n"
+            "2. DO NOT wrap the command in markdown blocks (e.g. ```powershell ... ```).\n"
+            "3. DO NOT output any conversational text, explanations, or warnings.\n"
+            "4. If the user references past context (like 'go into it' or 'delete those files'), use this chat history to deduce the command."
+        )
+        
+        # Initialize a persistent chat session instead of a stateless generate_content call
+        _chat_session = client.chats.create(
+            model='gemini-3.5-flash-lite',
+            config=genai.types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.1
+            )
+        )
+    return _chat_session
+
 def translate_to_shell(prompt: str) -> str:
-    """Translates natural language into a Windows PowerShell command."""
-    # Check for API key (loaded from .env usually, or system env)
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        console.print("[bold red]Error:[/bold red] GEMINI_API_KEY environment variable is not set.")
-        console.print("Please set it in your .env file or system environment.")
+    """Translates a natural language prompt into a PowerShell command using Gemini."""
+    chat = get_chat_session()
+    if not chat:
+        console.print("[bold red]Error:[/bold red] GEMINI_API_KEY not found in .env")
         return ""
         
     try:
         console.print("[dim]Asking Gemini...[/dim]")
-        client = genai.Client(api_key=api_key)
         
-        system_instruction = (
-            "You are an expert Windows PowerShell assistant. "
-            "The user will provide a natural language request. "
-            "You must output ONLY the raw, executable PowerShell command that fulfills the request. "
-            "Do NOT wrap the command in markdown blocks. Do NOT provide any explanation or conversational text. "
-            "If the request spans multiple commands, separate them with a semicolon."
-        )
+        # Send message to the persistent chat session
+        response = chat.send_message(prompt)
         
-        response = client.models.generate_content(
-            model='gemini-3.5-flash-lite',
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                system_instruction=system_instruction,
-            ),
-        )
+        # Strip any accidental markdown formatting
+        command = response.text.strip()
+        if command.startswith("```powershell"):
+            command = command[13:]
+        if command.startswith("```"):
+            command = command[3:]
+        if command.endswith("```"):
+            command = command[:-3]
+            
+        return command.strip()
         
-        return response.text.strip().replace("```powershell", "").replace("```", "").strip()
     except Exception as e:
-        console.print(f"[bold red]LLM Error:[/bold red] {e}")
+        console.print(f"[bold red]Translation Error:[/bold red] {e}")
         return ""
