@@ -110,7 +110,9 @@ def get_battery_status():
     return f"<{color}>{icon} {percent}% ({requests}/{limit} reqs) ({token_str} tkns)</{color}>"
 
 def get_model_name() -> str:
-    """Returns the currently active AI model name."""
+    """Returns the currently active AI model name, if SHOW_LLM_MODEL is not false."""
+    if os.environ.get("SHOW_LLM_MODEL", "True").lower() != "true":
+        return ""
     return os.environ.get("LLM_MODEL", "gemini-2.5-flash")
 
 def translate_to_shell(prompt: str) -> str:
