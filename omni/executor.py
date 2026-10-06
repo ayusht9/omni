@@ -1,6 +1,6 @@
 import os
 import subprocess
-import re
+import tempfile
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.syntax import Syntax
@@ -8,35 +8,20 @@ from rich.syntax import Syntax
 console = Console()
 
 def execute_native(command: str):
-    """Executes native shell commands, handling built-ins like 'cd' properly."""
-    parts = command.strip().split()
-    if not parts:
+    """Executes native shell commands and permanently syncs the directory state."""
+    if not command.strip():
         return
         
-    cmd = parts[0].lower()
-
-    # Handle internal 'cd' command because subprocess 'cd' doesn't persist
-    if cmd == 'cd':
-        try:
-            target_dir = " ".join(parts[1:]) if len(parts) > 1 else os.path.expanduser('~')
-            os.chdir(target_dir)
-        except Exception as e:
-            console.print(f"[bold red]cd error:[/bold red] {e}")
-        return
-
-    # Handle Windows drive changes (e.g., "D:" or "E:\")
-    if re.match(r'^[a-z]:[\\/]?$', cmd):
-        try:
-            os.chdir(cmd.upper())
-        except Exception as e:
-            console.print(f"[bold red]Drive change error:[/bold red] {e}")
-        return
-
-    # Handle other native commands via powershell
+    cwd_file = os.path.join(tempfile.gettempdir(), 'omni_cwd.txt')
+    
+    # We append a hidden command to PowerShell to save its final working directory.
+    # This ensures that whether you use 'cd', 'D:', or 'Set-Location' natively or via AI, Python always syncs up.
+    ps_command = f"{command} ; (Get-Location).Path | Out-File -FilePath '{cwd_file}' -Encoding utf8"
+    
     try:
-        # Run through PowerShell for native Windows experience
+        # Run through PowerShell for native Windows experience, allowing live streaming
         result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", command],
+            ["powershell", "-NoProfile", "-Command", ps_command],
             capture_output=True,
             text=True
         )
@@ -46,6 +31,13 @@ def execute_native(command: str):
         if result.stderr:
             console.print(f"[bold red]{result.stderr}[/bold red]", end='')
             
+        # Sync Python's working directory with PowerShell's final directory
+        if os.path.exists(cwd_file):
+            with open(cwd_file, 'r', encoding='utf-8') as f:
+                # Out-File with utf8 adds BOM, so strip it along with whitespace
+                new_cwd = f.read().strip('\ufeff \n\r')
+                if new_cwd and os.path.exists(new_cwd):
+                    os.chdir(new_cwd)
     except Exception as e:
         console.print(f"[bold red]Execution error:[/bold red] {e}")
 
