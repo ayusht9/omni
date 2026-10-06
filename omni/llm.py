@@ -50,43 +50,45 @@ def _get_usage_file():
     from omni.config import get_omni_dir
     return get_omni_dir() / 'usage.json'
 
-def record_usage(tokens: int):
+def record_usage(tokens: int = 0, increment_request: bool = True):
     usage_file = _get_usage_file()
     today = datetime.now().strftime("%Y-%m-%d")
-    data = {"date": today, "tokens": 0}
+    data = {"date": today, "tokens": 0, "requests": 0}
     
     if usage_file.exists():
         try:
             with open(usage_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             if data.get("date") != today:
-                data = {"date": today, "tokens": 0}
+                data = {"date": today, "tokens": 0, "requests": 0}
         except Exception:
             pass
             
-    data["tokens"] += tokens
+    data["tokens"] = data.get("tokens", 0) + tokens
+    if increment_request:
+        data["requests"] = data.get("requests", 0) + 1
     
     with open(usage_file, 'w', encoding='utf-8') as f:
         json.dump(data, f)
 
 def get_battery_status():
-    """Returns a formatted battery string based on a soft limit of 50,000 tokens per day."""
+    """Returns a formatted battery string based on the actual 1,500 requests/day limit."""
     usage_file = _get_usage_file()
     today = datetime.now().strftime("%Y-%m-%d")
-    tokens = 0
+    requests = 0
     
     if usage_file.exists():
         try:
             with open(usage_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             if data.get("date") == today:
-                tokens = data.get("tokens", 0)
+                requests = data.get("requests", 0)
         except Exception:
             pass
             
-    # Assuming a visual limit of 50,000 tokens for the battery gauge
-    limit = 50000
-    percent = max(0, 100 - int((tokens / limit) * 100))
+    # The actual free-tier limit is 1,500 requests per day
+    limit = 1500
+    percent = max(0, 100 - int((requests / limit) * 100))
     
     if percent > 75:
         icon = "🔋"
@@ -98,8 +100,7 @@ def get_battery_status():
         icon = "💀"
         color = "ansired"
         
-    token_str = f"{tokens/1000:.1f}k" if tokens >= 1000 else str(tokens)
-    return f" <{color}>{icon} {percent}% ({token_str})</{color}>"
+    return f" <{color}>{icon} {percent}% ({requests}/{limit})</{color}>"
 
 def translate_to_shell(prompt: str) -> str:
     """Translates a natural language prompt into a PowerShell command using Gemini."""
@@ -119,10 +120,11 @@ def translate_to_shell(prompt: str) -> str:
             return ""
             
         # Track usage natively
+        tokens = 0
         if hasattr(response, 'usage_metadata') and response.usage_metadata:
             tokens = getattr(response.usage_metadata, 'total_token_count', 0)
-            if tokens:
-                record_usage(tokens)
+            
+        record_usage(tokens=tokens, increment_request=True)
         
         # Strip any accidental markdown formatting
         command = response.text.strip()
