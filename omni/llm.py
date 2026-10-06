@@ -73,5 +73,9 @@ def translate_to_shell(prompt: str) -> str:
         return command.strip()
         
     except Exception as e:
-        console.print(f"[bold red]Translation Error:[/bold red] {e}")
+        error_msg = str(e).lower()
+        if "429" in error_msg or "quota" in error_msg or "exhausted" in error_msg:
+            console.print("[bold yellow]⚠️ Token Limit Reached:[/bold yellow] You have exhausted your Gemini API quota or hit the rate limit. Please wait a minute or check your API key tier.")
+        else:
+            console.print(f"[bold red]Translation Error:[/bold red] {e}")
         return ""
