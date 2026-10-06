@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import json
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.syntax import Syntax
@@ -13,10 +14,15 @@ def execute_native(command: str):
         return
         
     cwd_file = os.path.join(tempfile.gettempdir(), 'omni_cwd.txt')
+    env_file = os.path.join(tempfile.gettempdir(), 'omni_env.json')
     
-    # We append a hidden command to PowerShell to save its final working directory.
-    # This ensures that whether you use 'cd', 'D:', or 'Set-Location' natively or via AI, Python always syncs up.
-    ps_command = f"{command} ; (Get-Location).Path | Out-File -FilePath '{cwd_file}' -Encoding utf8"
+    # We append a hidden command to PowerShell to save its final working directory AND environment variables.
+    # This ensures that whether you use 'cd' or activate a Python virtual env natively or via AI, Python always syncs up.
+    ps_command = (
+        f"{command} ; "
+        f"(Get-Location).Path | Out-File -FilePath '{cwd_file}' -Encoding utf8 ; "
+        f"Get-ChildItem Env: | Select-Object Name, Value | ConvertTo-Json | Out-File -FilePath '{env_file}' -Encoding utf8"
+    )
     
     try:
         # Run through PowerShell for native Windows experience, allowing live streaming
@@ -38,6 +44,19 @@ def execute_native(command: str):
                 new_cwd = f.read().strip('\ufeff \n\r')
                 if new_cwd and os.path.exists(new_cwd):
                     os.chdir(new_cwd)
+                    
+        # Sync Python's environment variables with PowerShell's final environment
+        if os.path.exists(env_file):
+            with open(env_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip('\ufeff \n\r')
+                if content:
+                    try:
+                        env_vars = json.loads(content)
+                        for item in env_vars:
+                            os.environ[item['Name']] = item['Value']
+                    except Exception as e:
+                        console.print(f"[dim]Failed to sync environment: {e}[/dim]")
+                        
     except Exception as e:
         console.print(f"[bold red]Execution error:[/bold red] {e}")
 
