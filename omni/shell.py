@@ -8,7 +8,7 @@ from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.completion import Completer, Completion, PathCompleter, ExecutableCompleter
 from omni import config
 from omni.executor import execute_native, execute_ai_command
-from omni.llm import translate_to_shell
+from omni.llm import translate_to_shell, get_battery_status
 from rich.console import Console
 
 console = Console()
@@ -104,10 +104,11 @@ def main():
             
             git_str = get_git_branch()
             venv_str = get_python_env()
+            battery_str = get_battery_status()
             
-            # Multiline ZSH-style beautiful prompt with Nerd Font icons
+            # Multiline ZSH-style beautiful prompt with Nerd Font icons and AI Battery
             prompt_html = HTML(
-                f'<ansiblue>╭─</ansiblue> <ansicyan>🌌 Omni</ansicyan> <ansiblue>📂 {folder_name}</ansiblue>{git_str}{venv_str}<ansiyellow>{elapsed_str}</ansiyellow>\n'
+                f'<ansiblue>╭─</ansiblue> <ansicyan>🌌 Omni</ansicyan> <ansiblue>📂 {folder_name}</ansiblue>{git_str}{venv_str}{battery_str}<ansiyellow>{elapsed_str}</ansiyellow>\n'
                 f'<ansiblue>╰─</ansiblue><ansigreen>⚡ </ansigreen>'
             )
             

@@ -1,5 +1,7 @@
 import os
 import warnings
+import json
+from datetime import datetime
 from google import genai
 from rich.console import Console
 from dotenv import load_dotenv
@@ -44,6 +46,61 @@ def get_chat_session():
         )
     return _chat_session
 
+def _get_usage_file():
+    from omni.config import get_omni_dir
+    return get_omni_dir() / 'usage.json'
+
+def record_usage(tokens: int):
+    usage_file = _get_usage_file()
+    today = datetime.now().strftime("%Y-%m-%d")
+    data = {"date": today, "tokens": 0}
+    
+    if usage_file.exists():
+        try:
+            with open(usage_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if data.get("date") != today:
+                data = {"date": today, "tokens": 0}
+        except Exception:
+            pass
+            
+    data["tokens"] += tokens
+    
+    with open(usage_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+def get_battery_status():
+    """Returns a formatted battery string based on a soft limit of 50,000 tokens per day."""
+    usage_file = _get_usage_file()
+    today = datetime.now().strftime("%Y-%m-%d")
+    tokens = 0
+    
+    if usage_file.exists():
+        try:
+            with open(usage_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if data.get("date") == today:
+                tokens = data.get("tokens", 0)
+        except Exception:
+            pass
+            
+    # Assuming a visual limit of 50,000 tokens for the battery gauge
+    limit = 50000
+    percent = max(0, 100 - int((tokens / limit) * 100))
+    
+    if percent > 75:
+        icon = "🔋"
+        color = "ansigreen"
+    elif percent > 25:
+        icon = "🪫"
+        color = "ansiyellow"
+    else:
+        icon = "💀"
+        color = "ansired"
+        
+    token_str = f"{tokens/1000:.1f}k" if tokens >= 1000 else str(tokens)
+    return f" <{color}>{icon} {percent}% ({token_str})</{color}>"
+
 def translate_to_shell(prompt: str) -> str:
     """Translates a natural language prompt into a PowerShell command using Gemini."""
     chat = get_chat_session()
@@ -60,6 +117,12 @@ def translate_to_shell(prompt: str) -> str:
         if not response.text:
             console.print("[bold red]Translation Error:[/bold red] Gemini returned an empty response. (The prompt might have been blocked by safety filters or it couldn't generate a command).")
             return ""
+            
+        # Track usage natively
+        if hasattr(response, 'usage_metadata') and response.usage_metadata:
+            tokens = getattr(response.usage_metadata, 'total_token_count', 0)
+            if tokens:
+                record_usage(tokens)
         
         # Strip any accidental markdown formatting
         command = response.text.strip()
