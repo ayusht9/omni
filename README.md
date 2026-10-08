@@ -10,7 +10,6 @@ Omni Shell is a custom Python-based terminal built using `prompt_toolkit`, `rich
 - 🤖 **Natural Language to Shell:** Just type `? how do I find all python files modified today?` and watch Omni generate the right command!
 - 🎨 **Beautiful UI:** A dynamic, multiline ZSH-style prompt with Git branch tracking, Python VENV detection, and execution time metrics.
 - ⚡ **Built-in Power Tools:** Native `search` for web queries and `read` for file inspection without leaving the terminal.
-- 🔋 **AI Tracking:** Real-time tracking to monitor your LLM usage.
 
 ## 🚀 Installation
 
