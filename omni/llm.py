@@ -110,9 +110,7 @@ def get_battery_status():
     return f"<{color}>{icon} {percent}% ({requests}/{limit} reqs) ({token_str} tkns)</{color}>"
 
 def get_model_name() -> str:
-    """Returns the currently active AI model name, if SHOW_LLM_MODEL is not false."""
-    if os.environ.get("SHOW_LLM_MODEL", "True").lower() != "true":
-        return ""
+    """Returns the currently active AI model name."""
     return os.environ.get("LLM_MODEL", "gemini-2.5-flash")
 
 def translate_to_shell(prompt: str) -> str:
@@ -150,10 +148,16 @@ def translate_to_shell(prompt: str) -> str:
             
         return command.strip()
         
-    except Exception as e:
+    except genai.errors.APIError as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "exhausted" in error_msg:
-            console.print("[bold yellow]⚠️ Token Limit Reached:[/bold yellow] You have exhausted your Gemini API quota or hit the rate limit. Please wait a minute or check your API key tier.")
+            console.print("[bold yellow]⚠️ Token Limit Reached:[/bold yellow] You have exhausted your Gemini API quota or hit the rate limit.")
+        elif "not_found" in error_msg or "404" in error_msg:
+            console.print("[bold red]Translation Error:[/bold red] The configured AI model is not found or is unavailable.")
         else:
-            console.print(f"[bold red]Translation Error:[/bold red] {e}")
+            # Print the actual meaningful message returned by the API (e.g. invalid key)
+            console.print(f"[bold red]API Error:[/bold red] {e.message if hasattr(e, 'message') else str(e)}")
+        return ""
+    except Exception as e:
+        console.print("[bold red]Translation Error:[/bold red] An unexpected error occurred while communicating with the AI service.")
         return ""

@@ -16,6 +16,21 @@ console = Console()
 def get_git_branch():
     """Returns the current git branch formatted for the prompt, or empty string."""
     try:
+        # Fast path: check if we are in a git repository by looking for .git
+        curr = os.getcwd()
+        in_git = False
+        while True:
+            if os.path.exists(os.path.join(curr, '.git')):
+                in_git = True
+                break
+            parent = os.path.dirname(curr)
+            if parent == curr:
+                break
+            curr = parent
+            
+        if not in_git:
+            return ""
+
         # Hide the console window on Windows if possible
         startupinfo = None
         if os.name == 'nt':
@@ -73,7 +88,17 @@ class OmniCompleter(Completer):
         # Always suggest file/directory paths
         yield from self.path_completer.get_completions(document, complete_event)
 
+import sys
+
+def global_exception_handler(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    console.print(f"\n[bold red]Fatal Error:[/bold red] An unexpected crash occurred: {exc_value}")
+
 def main():
+    sys.excepthook = global_exception_handler
+
     # Ensure ~/.omni directory exists
     omni_dir = config.get_omni_dir()
 
@@ -112,7 +137,7 @@ def main():
                 f'<ansiblue>╰─</ansiblue><ansigreen>⚡ </ansigreen>'
             )
             
-            model_name = get_model_name()
+            model_name = get_model_name() if os.environ.get("SHOW_LLM_MODEL", "True").lower() == "true" else ""
             
             # Right edge prompt (metrics)
             rprompt_parts = []
@@ -200,6 +225,10 @@ def main():
             continue
         except EOFError:
             break
+        except Exception:
+            console.print("[bold red]An unexpected error occurred in the shell. Please try again.[/bold red]")
+            last_execution_time = 0.0
+            continue
 
 if __name__ == '__main__':
     main()

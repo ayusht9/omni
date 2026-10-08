@@ -29,14 +29,17 @@ def load_omnirc():
         target_rc = global_rc
     
     if target_rc.exists():
-        with open(target_rc, 'r') as f:
-            for line in f:
-                line = line.strip()
-                # Ignore empty lines and comments
-                if line and not line.startswith('#'):
-                    # Support exporting env vars directly from .omnirc
-                    if '=' in line and not line.startswith('alias '):
-                        key, val = line.split('=', 1)
-                        os.environ[key.strip()] = val.strip()
-                    else:
-                        print(f"[OmniRC] Executing: {line}")
+        try:
+            with open(target_rc, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    # Ignore empty lines and comments
+                    if line and not line.startswith('#'):
+                        # Support exporting env vars directly from .omnirc
+                        if '=' in line and not line.startswith('alias '):
+                            key, val = line.split('=', 1)
+                            os.environ[key.strip()] = val.strip()
+                        else:
+                            print(f"[OmniRC] Executing: {line}")
+        except Exception:
+            print(f"[OmniRC Error] Could not parse configuration file at {target_rc}. An unexpected error occurred.")

@@ -21,7 +21,7 @@ def execute_native(command: str):
     ps_command = (
         f"{command} ; "
         f"(Get-Location).Path | Out-File -FilePath '{cwd_file}' -Encoding utf8 ; "
-        f"Get-ChildItem Env: | Select-Object Name, Value | ConvertTo-Json | Out-File -FilePath '{env_file}' -Encoding utf8"
+        f"[System.Environment]::GetEnvironmentVariables() | ConvertTo-Json | Out-File -FilePath '{env_file}' -Encoding utf8"
     )
     
     try:
@@ -52,13 +52,14 @@ def execute_native(command: str):
                 if content:
                     try:
                         env_vars = json.loads(content)
-                        for item in env_vars:
-                            os.environ[item['Name']] = item['Value']
-                    except Exception as e:
-                        console.print(f"[dim]Failed to sync environment: {e}[/dim]")
+                        for key, val in env_vars.items():
+                            if val is not None:
+                                os.environ[key] = str(val)
+                    except Exception:
+                        console.print("[dim]Failed to sync environment: An unexpected error occurred.[/dim]")
                         
-    except Exception as e:
-        console.print(f"[bold red]Execution error:[/bold red] {e}")
+    except Exception:
+        console.print("[bold red]Execution error: An error occurred while running the native command.[/bold red]")
 
 def execute_ai_command(command_str: str) -> bool:
     """Safely previews an AI-generated command and asks for confirmation before executing."""
@@ -74,7 +75,7 @@ def execute_ai_command(command_str: str) -> bool:
     print("")
     
     # Safety Check Prompt
-    is_confirmed = Confirm.ask("Execute this command?")
+    is_confirmed = Confirm.ask("Execute this command?", default=True)
     if is_confirmed:
         console.print("[bold green]Executing...[/bold green]")
         execute_native(command_str)

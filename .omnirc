@@ -2,15 +2,15 @@
 # Commands here will run at the start of every Omni session.
 
 # --- Shell Settings ---
-echo "Booting Omni..."
-set-theme dark
+# echo "Booting Omni..."
+# set-theme dark
 
 # --- AI Configuration ---
 # Set the LLM model used by Omni (e.g. gemini-2.5-flash, gemini-3.5-flash-lite)
-LLM_MODEL=gemini-2.5-flash
+LLM_MODEL=gemini-3.5-flash-lite
 
 # Toggle the AI Battery usage gauge and right prompt metrics
-SHOW_BATTERY=True
+SHOW_BATTERY=False
 
 # Toggle the display of the active LLM model in the prompt
 SHOW_LLM_MODEL=False
